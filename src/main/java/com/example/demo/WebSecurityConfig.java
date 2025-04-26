@@ -8,16 +8,11 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -43,13 +38,13 @@ public class WebSecurityConfig {
 				// .securityMatcher("/")
 				.authorizeHttpRequests(authorize -> 
 						{authorize.requestMatchers("/", "/home").permitAll();
-						authorize.requestMatchers("/endpoint").hasAnyRole("ADMIN");
+						// authorize.requestMatchers("/endpoint").hasAnyRole("ADMIN");
 						authorize.anyRequest().authenticated();})
 				.csrf(Customizer.withDefaults())
 				.httpBasic(Customizer.withDefaults())
 				.formLogin(Customizer.withDefaults())
-				// .authenticationManager(authenticationManagerBean(http))
-				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.authenticationManager(authenticationManagerBean(http))
+				
 				;
 
 		return http.build();
@@ -89,17 +84,13 @@ public class WebSecurityConfig {
 		// return authenticationManagerBuilder.build();
     }
 
-	// @Bean
-	// public AuthenticationManager authenticationManagerBean(HttpSecurity http) throws Exception {
-	// 	 AuthenticationManagerBuilder authenticationManagerBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
-	// 	authenticationManagerBuilder.authenticationProvider(customAuthenticationProvider);
-	// 	authenticationManagerBuilder.userDetailsService(customUserDetailsService());
-	// 	authenticationManagerBuilder.inMemoryAuthentication()
-	// 		.withUser("memuser")
-	// 		.password(passwordEncoder().encode("pass"))
-	// 		.roles("USER");
-	// 	 return authenticationManagerBuilder.build();
-	//  }
+	@Bean
+	public AuthenticationManager authenticationManagerBean(HttpSecurity http) throws Exception {
+		DaoAuthenticationProvider apiAuthProvider = new DaoAuthenticationProvider();
+        apiAuthProvider.setUserDetailsService(mobileDetailsService());
+        apiAuthProvider.setPasswordEncoder(passwordEncoder());
+		 return new ProviderManager(apiAuthProvider);
+	 }
 
 	@Bean
     protected PasswordEncoder passwordEncoder() {
@@ -109,14 +100,13 @@ public class WebSecurityConfig {
 
 
 	@Bean
-	@Order(1)
 	protected CustomUserDetailsService customUserDetailsService() {
 
 		return new CustomUserDetailsService();
 	}
 
-	// @Bean
-	// protected MyUserDetailsService myUserDetailsService(){
-	// 	return new MyUserDetailsService();
-	// }
+	@Bean
+	protected MobileDetailsService mobileDetailsService(){
+		return new MobileDetailsService();
+	}
 }
